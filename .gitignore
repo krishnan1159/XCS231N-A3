@@ -1,0 +1,34 @@
+# Python bytecode and tooling caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environments (the shared .venv is linked locally)
+.venv
+venv/
+env/
+ENV/
+
+# Jupyter's transient state
+.ipynb_checkpoints/
+
+# Local data, model checkpoints, and experiment outputs
+data/
+datasets/
+checkpoints/
+outputs/
+runs/
+wandb/
+*.pt
+*.pth
+*.ckpt
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
