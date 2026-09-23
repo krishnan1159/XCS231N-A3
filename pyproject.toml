@@ -20,7 +20,7 @@ dependencies = [
     "scikit-learn==1.9.0",
     "ftfy==6.3.1",
     "regex==2026.7.19",
-    "thop==0.1.1-2209072238",
+    "thop==0.1.1.post2209072238",
     "numpy==2.5.1",
     "tensorflow==2.21.0",
     "tensorflow_datasets==4.9.10",

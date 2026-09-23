@@ -39,6 +39,11 @@ class PositionalEncoding(nn.Module):
         # less than 5 lines of code.                                               #
         ############################################################################
         # ### START CODE HERE ###
+        pe = pe + torch.arange(embed_dim)[None, None, :]
+        pe = (pe // 2) * 2
+        pos = torch.arange(max_len)[None, :, None]
+        pe[:, :, 0::2] = torch.sin(pos * torch.pow(10000, -pe[:, :, 0::2] / embed_dim))
+        pe[:, :, 1::2] = torch.cos(pos * torch.pow(10000, -pe[:, :, 1::2] / embed_dim))
         # ### END CODE HERE ###
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -68,6 +73,7 @@ class PositionalEncoding(nn.Module):
         # afterward. This should only take a few lines of code.                    #
         ############################################################################
         # ### START CODE HERE ###
+        output = self.dropout(x + self.pe[:, :S, :D])
         # ### END CODE HERE ###
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -160,6 +166,40 @@ class MultiHeadAttention(nn.Module):
         #     function masked_fill may come in handy.                              #
         ############################################################################
         # ### START CODE HERE ###
+
+        H = self.n_head
+        D_H = E // H
+
+        ## Construct Q, K, V for all heads through linear projection.
+        q_all = self.query(query) # (N, S, E)
+        k_all = self.key(key) # (N, T, E)
+        v_all = self.value(value) # (N, T, E)
+
+        ## Split into multiple heads
+        q_heads = q_all.reshape((N, S, H, D_H)).transpose(1, 2) # (N, H, S, E/H)
+        k_heads = k_all.reshape((N, T, H, D_H)).permute(0, 2, 3, 1) # (N, H, E/H, T)
+        v_heads = v_all.reshape((N, T, H, D_H)).transpose(1, 2) # (N, H, T, E/H)
+
+        ## Compute attention scores on each head.
+        # (N, H, S, E/H) * (N, H, E/H, T) = (N, H, S, T)
+        scores = torch.matmul(q_heads, k_heads) / math.sqrt(D_H)
+        # attn_mask is (S, T) and is broadcastable
+        if attn_mask is not None:
+            scores = scores.masked_fill(~attn_mask, float("-inf"))
+        attenion_scores = torch.softmax(scores, dim=-1)
+
+        ## Apply droput to the attention scores
+        attenion_scores = self.attn_drop(attenion_scores) # (N, H, S, T)
+
+        ## Multiply with value matrices
+        # (N, H, S, T) * (N, H, T, E/H) = (N, H, S, E/H)
+        y_heads = torch.matmul(attenion_scores, v_heads)
+        y_heads = y_heads.transpose(1, 2) # (N, S, H, E/H)
+        y = y_heads.reshape((N, S, E)) # (N, S, E)
+
+        ## Form output by finally projecting.
+        output = self.proj(y)
+
         # ### END CODE HERE ###
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -258,6 +298,19 @@ class TransformerDecoderLayer(nn.Module):
         # same structure as self-attention implemented just above.                 #
         ############################################################################
         # ### START CODE HERE ###
+
+        shortcut = tgt
+        tgt = self.cross_attn(query=tgt, key=memory, value=memory)
+        tgt = self.dropout_cross(tgt)
+        tgt = tgt + shortcut
+        tgt = self.norm_cross(tgt)
+
+        shortcut = tgt
+        tgt = self.ffn(tgt)
+        tgt = self.dropout_ffn(tgt)
+        tgt = tgt + shortcut
+        tgt = self.norm_ffn(tgt)
+
         # ### END CODE HERE ###
         ############################################################################
         #                             END OF YOUR CODE                             #
