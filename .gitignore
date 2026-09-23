@@ -20,6 +20,9 @@ ENV/
 # Local data, model checkpoints, and experiment outputs
 data/
 datasets/
+!src/submission/xcs231n/datasets/
+src/submission/xcs231n/datasets/*
+!src/submission/xcs231n/datasets/get_datasets.sh
 checkpoints/
 outputs/
 runs/
